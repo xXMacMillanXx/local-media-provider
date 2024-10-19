@@ -15,7 +15,7 @@ python main.py
 ```
 Starting the project, it should tell you the address. By default this should be 0.0.0.0:5001 or 127.0.0.1:5001. Open it in your web browser of choice.
 
-Like I mentioned, currently the project is looking for a *media* folder in the same directory. You can copy some files there to test, or create symlink to a folder called media.
+Like I mentioned, currently the project is looking for a *media* folder in the same directory. You can copy some files there to test, or create a symlink to a folder called media.
 ```bash
 ln -s /path/to/media/you/want/to/see media
 ```
