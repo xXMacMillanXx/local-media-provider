@@ -72,20 +72,32 @@ def page_script():
 
 
 app, rt = fast_app()
+supported_video = [".mp4", ".webm", ".ogg"]
+supported_audio = [".mp3", ".wav", ".ogg"]
+supported_image = [".apng", ".gif", ".ico", ".cur", ".jpg", ".jpeg", ".jfif", ".pjpeg", ".pjp", ".png", ".svg", ".webp"]
+supported_document = [".pdf"]
 
 
 def index_page(sess):
     path = sess['path']
     media = get_media_list(path)
-    sess['tree'] = get_tree(path, True)
+    sess['tree'] = get_tree(path, 1)
     first_vid = ""
     if len(media) > 0:
         first_vid = media[0][1]
     return page_style(), page_script(), sidebar(sess), Div(video_player(first_vid), cls="main")
 
 
-def explore(starting_path, space_saver=False):
+def filter_list(input: list[str]) -> list[str]:
+    """Uses supported_* lists to filter files in list"""
+    supported_files = supported_video + supported_audio + supported_image + supported_document
+    ret = [file for file in input for ext in supported_files if ext.lower() in file.lower()]
+    return ret
+
+
+def explore(starting_path, level=-1):
     alld = {'': {}}
+    count = 0
     if starting_path[-1] == os.sep:
         starting_path = starting_path[0:-1]
 
@@ -102,15 +114,15 @@ def explore(starting_path, space_saver=False):
         d['directories'].insert(0, "..")
         d['files'] = []
         if filenames:
-            d['files'] = sorted(filenames)
-    if space_saver:
-        return {"directories": alld['']['directories'], "files": alld['']['files']}
-    else:
-        return alld['']
+            d['files'] = sorted(filter_list(filenames))
+        count += 1
+        if level != -1 and count >= level:
+            break
+    return alld['']
 
 
 def get_dir_list(path) -> list[str]:
-    ret = explore(path)["directories"]
+    ret = explore(path, 1)["directories"]
     return ret
 
 
@@ -118,13 +130,13 @@ def get_media_list(path) -> list[(str, str)]:
     # worked, but is linux specific
     # ret = [(x.rsplit('/', 1)[1], x) for x in os.popen(f"find -L {path} -maxdepth 1 -type f").read().split('\n') if len(x) > 1]
     # ret.sort()
-    media = explore(path)
+    media = explore(path, 1)
     ret = [(x, os.path.join(path, x)) for x in media["files"]]
     return ret
 
 
-def get_tree(path, space_saver=False) -> dict[str]:
-    return explore(path, space_saver)
+def get_tree(path, level=-1) -> dict[str]:
+    return explore(path, level)
 
 
 def sidebar(sess):
@@ -192,7 +204,7 @@ def post(value: str, sess):
     path = os.path.join(sess['path'], value)
     if value == "..":
         path = sess['path'].rsplit(os.sep, 1)[0]
-    sess['tree'] = get_tree(path, True)
+    sess['tree'] = get_tree(path, 1)
     sess['path'] = path
 
     return create_sidebar_links(sess), create_datalist(sess)
