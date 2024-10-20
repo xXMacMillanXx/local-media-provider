@@ -2,14 +2,6 @@ import os
 from fasthtml.common import *
 
 
-# Works, but if session cookie is full, can produce issues.
-# cookie gets full if too many files are found in the folder.
-# maybe other storage is available, or perhaps a database could help.
-
-# Make it possible to filter files, so only specific file types show up.
-# for example, mp4 and webm
-
-
 def page_style():
     return Style("""
         :root {
@@ -81,7 +73,6 @@ supported_document = [".pdf"]
 def index_page(sess):
     path = sess['path']
     media = get_media_list(path)
-    sess['tree'] = get_tree(path, 1)
     first_vid = ""
     if len(media) > 0:
         first_vid = media[0][1]
@@ -146,7 +137,7 @@ def sidebar(sess):
 
 def create_sidebar_links(sess) -> list[A]:
     path = sess['path']
-    dirs = sess['tree']['directories']
+    dirs = get_dir_list(path)
     media = get_media_list(path)
     d_list = [create_dir_link(x) for x in dirs]
     a_list = [create_file_link(x[0], x[1]) for x in media]
@@ -155,7 +146,7 @@ def create_sidebar_links(sess) -> list[A]:
 
 def create_datalist(sess) -> list[Option]:
     path = sess['path']
-    dirs = sess['tree']['directories']
+    dirs = get_dir_list(path)
     media = get_media_list(path)
     opts = [Option(value=x) for x in dirs]
     opts += [Option(value=x[0]) for x in media]
@@ -176,7 +167,6 @@ def video_player(video_path):
 
 @rt('/')
 def get(sess):
-    sess['tree'] = {}
     if 'path' not in sess:
         sess['path'] = "media"  # set start directory
     return index_page(sess)
@@ -190,10 +180,11 @@ def get(fname:str, ext:str, sess):
 @rt('/search')
 def post(search: str , sess):
     ret = []
-    for x in sess['tree']['directories']:
+    tree = get_tree(sess['path'], 1)
+    for x in tree['directories']:
         if search.lower() in x.lower():
             ret.append(create_dir_link(x))
-    for x in sess['tree']['files']:
+    for x in tree['files']:
         if search.lower() in x.lower():
             ret.append(create_file_link(x, os.path.join(sess['path'], x)))
     return ret, create_datalist(sess)
@@ -204,7 +195,6 @@ def post(value: str, sess):
     path = os.path.join(sess['path'], value)
     if value == "..":
         path = sess['path'].rsplit(os.sep, 1)[0]
-    sess['tree'] = get_tree(path, 1)
     sess['path'] = path
 
     return create_sidebar_links(sess), create_datalist(sess)

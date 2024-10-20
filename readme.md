@@ -23,14 +23,14 @@ ln -s /path/to/media/you/want/to/see media
 ## What currently works
 
  - videos can be played (only HTML video tag / browser supported formats)
- - files and folders are listed in the sidebar
+ - files and folders are listed in the sidebar (only web supported formats)
  - sidebar can be filtered / searched with the topbar
 
 ## Which additions are planned?
 
 ### Want to add
 
- - setting filters for files listed in the sidebar (e.g. mp4, webm - filetypes)
+ - *currently empty*
 
 ### Might add
 
