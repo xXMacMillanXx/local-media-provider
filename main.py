@@ -56,6 +56,10 @@ def page_script():
             volume = num;
         }
 
+        function clear_searchbar() {
+            document.getElementsByName("search")[0].value = "";
+        }
+
         function changeVideo(path) {
             var player = document.getElementsByTagName('video')[0];
             player.src = path;
@@ -158,7 +162,7 @@ def create_file_link(name: str, path: str):
 
 
 def create_dir_link(x: str):
-    return A(f"{x}", hx_post="change_tree", hx_target="#video-list", hx_vals="{\"value\":\"" + x + "\"}")
+    return A(f"{x}", hx_post="change_tree", hx_target="#video-list", hx_vals="{\"value\":\"" + x + "\"}", onclick="clear_searchbar()")
 
 
 def video_player(video_path):
