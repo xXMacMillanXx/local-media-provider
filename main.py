@@ -7,13 +7,13 @@ def page_style():
     return Style("""
         :root {
             --sidebar-size: 320px;
-            --topbar-size: 60px;
+            --topbar-pad-left: 335px;
         }
 
         .topnav {
             width: 100%;
-            height: var(--topbar-size);
             padding: 5px 15px;
+            padding-left: var(--topbar-pad-left)
         }
 
         .sidenav {
@@ -21,7 +21,6 @@ def page_style():
             width: var(--sidebar-size);
             position: fixed;
             z-index: 1;
-            top: var(--topbar-size);
             left: 0;
             overflow-x: hidden;
             padding-top: 5px;
@@ -89,6 +88,11 @@ def page_script():
             player.children[0].src = path;
             player.load();
         }
+
+        function changeImage(path) {
+            var viewer = document.getElementsByTagName('img')[0];
+            viewer.src = path;
+        }
     """, type="text/javascript")
 
 
@@ -112,7 +116,7 @@ def index_page(sess):
     first_vid = ""
     if len(media) > 0:
         first_vid = media[0][1]
-    return page_style(), page_script(), sidebar(sess), Div(video_player(first_vid), cls="main")
+    return page_style(), page_script(), sidebar(sess), searchbar(sess), Div(video_player(first_vid), cls="main")
 
 
 def filter_list(input: list[str]) -> list[str]:
@@ -166,9 +170,13 @@ def get_tree(path, level=-1) -> dict[str]:
     return explore(path, level)
 
 
+def searchbar(sess):
+    return Div(Input(type="search", name="search", list="searchwords", hx_post="/search", hx_trigger="input changed delay:500ms, search", hx_target="#video-list"), cls="topnav")
+
+
 def sidebar(sess):
     c_list = create_sidebar_links(sess)
-    return Div(Input(type="search", name="search", list="searchwords", hx_post="/search", hx_trigger="input changed delay:500ms, search", hx_target="#video-list"), cls="topnav"), Div(*c_list, create_datalist(sess), cls="sidenav", id="video-list")
+    return Div(*c_list, create_datalist(sess), cls="sidenav", id="video-list")
 
 
 def create_sidebar_links(sess) -> list[A]:
@@ -195,6 +203,8 @@ def create_file_link(name: str, path: str):
         return A(f"{name}", onclick=f"changeVideo(\"{path}\")")
     if ext in supported_audio:
         return A(f"{name}", onclick=f"changeAudio(\"{path}\")")
+    if ext in supported_image:
+        return A(f"{name}", onclick=f"changeImage(\"{path}\")")
     return A(f"{name}")
 
 
@@ -203,7 +213,7 @@ def create_dir_link(x: str):
 
 
 def video_player(video_path):
-    return Video(Source(src=video_path, type="video/mp4"), style="width:100%;height:95vh;", onloadstart="this.volume=get_vol()", onvolumechange="set_vol(this.volume)", controls="controls", autoplay="autoplay", loop="loop", preload="auto")
+    return Video(Source(src=video_path, type="video/mp4"), style="width:100%;max-height:92vh;", onloadstart="this.volume=get_vol()", onvolumechange="set_vol(this.volume)", controls="controls", autoplay="autoplay", loop="loop", preload="auto")
 
 
 def audio_player(audio_path):
@@ -225,6 +235,7 @@ def get(sess):
     return index_page(sess)
 
 
+# adds accept-ranges header to media, to change the current time
 @rt("/{fname:path}.{ext:static}")
 def get(fname:str, ext:str, sess):
     return FileResponse(f'{fname}.{ext}', headers={"accept-ranges": "bytes"})
