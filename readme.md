@@ -7,6 +7,7 @@ This is a simple and minimalistic project, creating a convenient media center fo
 Requirements
 ```bash
 pip install python-fasthtml
+pip install baize
 ```
 
 Run project
@@ -30,13 +31,13 @@ ln -s /path/to/media/you/want/to/see media
 
 ### Want to add
 
- - *currently empty*
+ - playing audio files
+ - view images
 
 ### Might add
 
- - playing audio files
- - view images
  - open pdf files
+ - open web urls? (links to specific videos, e.g. youtube embed links)
 
 ## What is not planned?
 

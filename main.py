@@ -1,5 +1,6 @@
 import os
 from fasthtml.common import *
+from baize.asgi.staticfiles import Files
 
 
 def page_style():
@@ -37,6 +38,23 @@ def page_style():
             padding: 0px 10px;
         }
 
+        #scale_box {
+            height: auto;
+            width: 100%;
+            overflow: hidden;
+            text-align: center;
+        }
+
+        #scale_box img {
+            max-width: 100%;
+            max-height: 100%;
+        }
+
+        img#image_box {
+            margin-top: auto;
+            height: inherit;
+        }
+
         @media screen and (max-height: 450px) {
             .sidenav {padding-top: 15px;}
             .sidenav a {}
@@ -62,12 +80,26 @@ def page_script():
 
         function changeVideo(path) {
             var player = document.getElementsByTagName('video')[0];
-            player.src = path;
+            player.children[0].src = path;
+            player.load();
+        }
+
+        function changeAudio(path) {
+            var player = document.getElementsByTagName('audio')[0];
+            player.children[0].src = path;
+            player.load();
         }
     """, type="text/javascript")
 
 
-app, rt = fast_app()
+# Starlette StaticFiles makes audio work
+# asgi Files make audio and videos scrubable again
+routes = [
+    Mount('/media', app=Files(directory='.'), name="media")
+]
+
+
+app, rt = fast_app(routes=routes)
 supported_video = [".mp4", ".webm", ".ogg"]
 supported_audio = [".mp3", ".wav", ".ogg"]
 supported_image = [".apng", ".gif", ".ico", ".cur", ".jpg", ".jpeg", ".jfif", ".pjpeg", ".pjp", ".png", ".svg", ".webp"]
@@ -158,7 +190,12 @@ def create_datalist(sess) -> list[Option]:
 
 
 def create_file_link(name: str, path: str):
-    return A(f"{name}", onclick=f"changeVideo(\"{path}\")")
+    ext = "." + path.rsplit('.', 1)[1].lower()
+    if ext in supported_video:
+        return A(f"{name}", onclick=f"changeVideo(\"{path}\")")
+    if ext in supported_audio:
+        return A(f"{name}", onclick=f"changeAudio(\"{path}\")")
+    return A(f"{name}")
 
 
 def create_dir_link(x: str):
@@ -167,6 +204,18 @@ def create_dir_link(x: str):
 
 def video_player(video_path):
     return Video(Source(src=video_path, type="video/mp4"), style="width:100%;height:95vh;", onloadstart="this.volume=get_vol()", onvolumechange="set_vol(this.volume)", controls="controls", autoplay="autoplay", loop="loop", preload="auto")
+
+
+def audio_player(audio_path):
+    return Audio(Source(src=audio_path, type="audio/mpeg"), onloadstart="this.volume=get_vol()", onvolumechange="set_vol(this.volume)", controls="controls", autoplay="autoplay", preload="auto")
+
+
+def image_viewer(image_path):
+    return Div(Img(src=image_path, id="image_box"), id="scale_box")
+
+
+def pdf_viewer(pdf_path):
+    return Embed(src=pdf_path, type="application/pdf", width="100%", height="100%")
 
 
 @rt('/')
