@@ -113,10 +113,22 @@ supported_document = [".pdf"]
 def index_page(sess):
     path = sess['path']
     media = get_media_list(path)
-    first_vid = ""
+    first_media = ""
     if len(media) > 0:
-        first_vid = media[0][1]
-    return page_style(), page_script(), sidebar(sess), searchbar(sess), Div(video_player(first_vid), cls="main")
+        first_media = media[0][1]
+    media_shower = get_suitable_display(first_media)
+    return page_style(), page_script(), sidebar(sess), searchbar(sess), Div(media_shower, cls="main")
+
+
+def get_suitable_display(media_path: str):
+    ext = which_media_type(media_path)
+    if ext == "video":
+        return video_player(media_path)
+    if ext == "audio":
+        return audio_player(media_path)
+    if ext == "image":
+        return image_viewer(media_path)
+    return ""
 
 
 def filter_list(input: list[str]) -> list[str]:
@@ -170,6 +182,19 @@ def get_tree(path, level=-1) -> dict[str]:
     return explore(path, level)
 
 
+def which_media_type(file: str) -> str:
+    ext = "." + file.rsplit('.', 1)[1].lower()
+    if ext in supported_video:
+        return "video"
+    if ext in supported_audio:
+        return "audio"
+    if ext in supported_image:
+        return "image"
+    if ext in supported_document:
+        return "document"
+    return "unsupported"
+
+
 def searchbar(sess):
     return Div(Input(type="search", name="search", list="searchwords", hx_post="/search", hx_trigger="input changed delay:500ms, search", hx_target="#video-list"), cls="topnav")
 
@@ -198,13 +223,13 @@ def create_datalist(sess) -> list[Option]:
 
 
 def create_file_link(name: str, path: str):
-    ext = "." + path.rsplit('.', 1)[1].lower()
-    if ext in supported_video:
-        return A(f"{name}", onclick=f"changeVideo(\"{path}\")")
-    if ext in supported_audio:
-        return A(f"{name}", onclick=f"changeAudio(\"{path}\")")
-    if ext in supported_image:
-        return A(f"{name}", onclick=f"changeImage(\"{path}\")")
+    ext = which_media_type(path)
+    if ext == "video":
+        return A(f"{name}", hx_post="update_display", hx_target=".main", hx_vals="{\"media_path\":\"" + path + "\"}", onclick=f"changeVideo(\"{path}\")")
+    if ext == "audio":
+        return A(f"{name}", hx_post="update_display", hx_target=".main", hx_vals="{\"media_path\":\"" + path + "\"}", onclick=f"changeAudio(\"{path}\")")
+    if ext == "image":
+        return A(f"{name}", hx_post="update_display", hx_target=".main", hx_vals="{\"media_path\":\"" + path + "\"}", onclick=f"changeImage(\"{path}\")")
     return A(f"{name}")
 
 
@@ -262,6 +287,18 @@ def post(value: str, sess):
     sess['path'] = path
 
     return create_sidebar_links(sess), create_datalist(sess)
+
+
+@rt('/update_display')
+def post(media_path: str, sess):
+    ext = which_media_type(media_path)
+    if ext == "video":
+        return video_player(media_path)
+    if ext == "audio":
+        return audio_player(media_path)
+    if ext == "image":
+        return image_viewer(media_path)
+    return ""
 
 
 serve()
