@@ -24,6 +24,8 @@ ln -s /path/to/media/you/want/to/see media
 ## What currently works
 
  - videos can be played (only HTML video tag / browser supported formats)
+ - audio can be played (only HTML audio tag / browser supported formats)
+ - images can be viewed (only HTML img tag / browser supported formats)
  - files and folders are listed in the sidebar (only web supported formats)
  - sidebar can be filtered / searched with the topbar
 
@@ -31,13 +33,13 @@ ln -s /path/to/media/you/want/to/see media
 
 ### Want to add
 
- - playing audio files
- - view images
+ - open pdf files
 
 ### Might add
 
- - open pdf files
  - open web urls? (links to specific videos, e.g. youtube embed links)
+ - save media as favorite?
+ - add subfolder search for searchbar?
 
 ## What is not planned?
 

@@ -3,103 +3,15 @@ from fasthtml.common import *
 from baize.asgi.staticfiles import Files
 
 
-def page_style():
-    return Style("""
-        :root {
-            --sidebar-size: 320px;
-            --topbar-pad-left: 335px;
-        }
-
-        .topnav {
-            width: 100%;
-            padding: 5px 15px;
-            padding-left: var(--topbar-pad-left)
-        }
-
-        .sidenav {
-            height: 100%;
-            width: var(--sidebar-size);
-            position: fixed;
-            z-index: 1;
-            left: 0;
-            overflow-x: hidden;
-            padding-top: 5px;
-        }
-
-        .sidenav a {
-            padding: 6px 8px 6px 16px;
-            text-decorator: none;
-            display: block;
-        }
-
-        .main {
-            margin-left: var(--sidebar-size);
-            padding: 0px 10px;
-        }
-
-        #scale_box {
-            height: auto;
-            width: 100%;
-            overflow: hidden;
-            text-align: center;
-        }
-
-        #scale_box img {
-            max-width: 100%;
-            max-height: 100%;
-        }
-
-        img#image_box {
-            margin-top: auto;
-            height: inherit;
-        }
-
-        @media screen and (max-height: 450px) {
-            .sidenav {padding-top: 15px;}
-            .sidenav a {}
-        }
-    """, type="text/css")
+# I don't think I need the javascript change*() functions anymore
+# add pdfs
+# add webpages, probably with database?
+# database could include favorites?
 
 
-def page_script():
-    return Script("""
-        var volume = 0.1;
-
-        function get_vol() {
-            return volume;
-        }
-
-        function set_vol(num) {
-            volume = num;
-        }
-
-        function clear_searchbar() {
-            document.getElementsByName("search")[0].value = "";
-        }
-
-        function changeVideo(path) {
-            var player = document.getElementsByTagName('video')[0];
-            player.children[0].src = path;
-            player.load();
-        }
-
-        function changeAudio(path) {
-            var player = document.getElementsByTagName('audio')[0];
-            player.children[0].src = path;
-            player.load();
-        }
-
-        function changeImage(path) {
-            var viewer = document.getElementsByTagName('img')[0];
-            viewer.src = path;
-        }
-    """, type="text/javascript")
-
-
-# Starlette StaticFiles makes audio work
-# asgi Files make audio and videos scrubable again
+media_folder = "media"
 routes = [
-    Mount('/media', app=Files(directory='.'), name="media")
+    Mount(f'/{media_folder}', app=Files(directory='.'), name=f"{media_folder}")
 ]
 
 
@@ -108,6 +20,14 @@ supported_video = [".mp4", ".webm", ".ogg"]
 supported_audio = [".mp3", ".wav", ".ogg"]
 supported_image = [".apng", ".gif", ".ico", ".cur", ".jpg", ".jpeg", ".jfif", ".pjpeg", ".pjp", ".png", ".svg", ".webp"]
 supported_document = [".pdf"]
+
+
+def page_style():
+    return Link(rel="stylesheet", href="src/css/main.css")
+
+
+def page_script():
+    return Script(src="src/js/main.js")
 
 
 def index_page(sess):
@@ -170,9 +90,6 @@ def get_dir_list(path) -> list[str]:
 
 
 def get_media_list(path) -> list[(str, str)]:
-    # worked, but is linux specific
-    # ret = [(x.rsplit('/', 1)[1], x) for x in os.popen(f"find -L {path} -maxdepth 1 -type f").read().split('\n') if len(x) > 1]
-    # ret.sort()
     media = explore(path, 1)
     ret = [(x, os.path.join(path, x)) for x in media["files"]]
     return ret
@@ -256,11 +173,10 @@ def pdf_viewer(pdf_path):
 @rt('/')
 def get(sess):
     if 'path' not in sess:
-        sess['path'] = "media"  # set start directory
+        sess['path'] = media_folder
     return index_page(sess)
 
 
-# adds accept-ranges header to media, to change the current time
 @rt("/{fname:path}.{ext:static}")
 def get(fname:str, ext:str, sess):
     return FileResponse(f'{fname}.{ext}', headers={"accept-ranges": "bytes"})

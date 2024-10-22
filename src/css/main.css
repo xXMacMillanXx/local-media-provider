@@ -1,0 +1,53 @@
+:root {
+    --sidebar-size: 320px;
+    --topbar-pad-left: 335px;
+}
+
+.topnav {
+    width: 100%;
+    padding: 5px 15px;
+    padding-left: var(--topbar-pad-left)
+}
+
+.sidenav {
+    height: 100%;
+    width: var(--sidebar-size);
+    position: fixed;
+    z-index: 1;
+    left: 0;
+    overflow-x: hidden;
+    padding-top: 5px;
+}
+
+.sidenav a {
+    padding: 6px 8px 6px 16px;
+    text-decorator: none;
+    display: block;
+}
+
+.main {
+    margin-left: var(--sidebar-size);
+    padding: 0px 10px;
+}
+
+#scale_box {
+    height: auto;
+    width: 100%;
+    overflow: hidden;
+    text-align: center;
+}
+
+#scale_box img {
+    max-width: 100%;
+    max-height: 100%;
+}
+
+img#image_box {
+    margin-top: auto;
+    height: inherit;
+}
+
+@media screen and (max-height: 450px) {
+    .sidenav {padding-top: 15px;}
+    .sidenav a {}
+}
