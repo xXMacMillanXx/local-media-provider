@@ -12,6 +12,7 @@ function clear_searchbar() {
     document.getElementsByName("search")[0].value = "";
 }
 
+/*
 function changeVideo(path) {
     var player = document.getElementsByTagName('video')[0];
     player.children[0].src = path;
@@ -28,3 +29,4 @@ function changeImage(path) {
     var viewer = document.getElementsByTagName('img')[0];
     viewer.src = path;
 }
+*/

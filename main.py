@@ -3,8 +3,6 @@ from fasthtml.common import *
 from baize.asgi.staticfiles import Files
 
 
-# I don't think I need the javascript change*() functions anymore
-# add pdfs
 # add webpages, probably with database?
 # database could include favorites?
 
@@ -36,8 +34,8 @@ def index_page(sess):
     first_media = ""
     if len(media) > 0:
         first_media = media[0][1]
-    media_shower = get_suitable_display(first_media)
-    return page_style(), page_script(), sidebar(sess), searchbar(sess), Div(media_shower, cls="main")
+    media_display = get_suitable_display(first_media)
+    return page_style(), page_script(), sidebar(sess), searchbar(sess), Div(media_display, cls="main")
 
 
 def get_suitable_display(media_path: str):
@@ -48,6 +46,8 @@ def get_suitable_display(media_path: str):
         return audio_player(media_path)
     if ext == "image":
         return image_viewer(media_path)
+    if ext == "document":
+        return pdf_viewer(media_path)
     return ""
 
 
@@ -141,12 +141,8 @@ def create_datalist(sess) -> list[Option]:
 
 def create_file_link(name: str, path: str):
     ext = which_media_type(path)
-    if ext == "video":
-        return A(f"{name}", hx_post="update_display", hx_target=".main", hx_vals="{\"media_path\":\"" + path + "\"}", onclick=f"changeVideo(\"{path}\")")
-    if ext == "audio":
-        return A(f"{name}", hx_post="update_display", hx_target=".main", hx_vals="{\"media_path\":\"" + path + "\"}", onclick=f"changeAudio(\"{path}\")")
-    if ext == "image":
-        return A(f"{name}", hx_post="update_display", hx_target=".main", hx_vals="{\"media_path\":\"" + path + "\"}", onclick=f"changeImage(\"{path}\")")
+    if ext in ["video", "audio", "image", "document"]:
+        return A(f"{name}", hx_post="update_display", hx_target=".main", hx_vals="{\"media_path\":\"" + path + "\"}")
     return A(f"{name}")
 
 
@@ -167,7 +163,7 @@ def image_viewer(image_path):
 
 
 def pdf_viewer(pdf_path):
-    return Embed(src=pdf_path, type="application/pdf", width="100%", height="100%")
+    return Embed(src=pdf_path, type="application/pdf", width="100%", style="height:92vh;")
 
 
 @rt('/')
@@ -207,14 +203,7 @@ def post(value: str, sess):
 
 @rt('/update_display')
 def post(media_path: str, sess):
-    ext = which_media_type(media_path)
-    if ext == "video":
-        return video_player(media_path)
-    if ext == "audio":
-        return audio_player(media_path)
-    if ext == "image":
-        return image_viewer(media_path)
-    return ""
+    return get_suitable_display(media_path)
 
 
 serve()
