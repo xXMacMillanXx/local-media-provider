@@ -99,6 +99,9 @@ def get_suitable_display(media_path: str):
 
 
 def which_media_type(file: str) -> str:
+    if not "." in file:
+        return "unsupported"
+
     ext = "." + file.rsplit('.', 1)[1].lower()
     if ext in supported_video:
         return "video"
