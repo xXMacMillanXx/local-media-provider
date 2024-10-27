@@ -3,7 +3,6 @@ from fasthtml.common import *
 from baize.asgi.staticfiles import Files
 
 
-# add webpages, probably with database?
 # database could include favorites?
 
 
@@ -11,21 +10,19 @@ media_folder = "media"
 routes = [
     Mount(f'/{media_folder}', app=Files(directory='.'), name=f"{media_folder}")
 ]
+hdrs = [
+    Title("Media Center"),  # leave title as first element in the list
+    Link(rel="stylesheet", href="src/css/main.css"),
+    Script(src="src/js/main.js")
+]
 
 
-app, rt = fast_app(routes=routes)
+app, rt = fast_app(hdrs=hdrs, routes=routes)
 supported_video = [".mp4", ".webm", ".ogg"]
 supported_audio = [".mp3", ".wav", ".ogg"]
 supported_image = [".apng", ".gif", ".ico", ".cur", ".jpg", ".jpeg", ".jfif", ".pjpeg", ".pjp", ".png", ".svg", ".webp"]
 supported_document = [".pdf"]
-
-
-def page_style():
-    return Link(rel="stylesheet", href="src/css/main.css")
-
-
-def page_script():
-    return Script(src="src/js/main.js")
+supported_web = [".link"]
 
 
 def index_page(sess):
@@ -35,25 +32,12 @@ def index_page(sess):
     if len(media) > 0:
         first_media = media[0][1]
     media_display = get_suitable_display(first_media)
-    return page_style(), page_script(), sidebar(sess), searchbar(sess), Div(media_display, cls="main")
-
-
-def get_suitable_display(media_path: str):
-    ext = which_media_type(media_path)
-    if ext == "video":
-        return video_player(media_path)
-    if ext == "audio":
-        return audio_player(media_path)
-    if ext == "image":
-        return image_viewer(media_path)
-    if ext == "document":
-        return pdf_viewer(media_path)
-    return ""
+    return hdrs[0], sidebar(sess), searchbar(sess), Div(media_display, cls="main")
 
 
 def filter_list(input: list[str]) -> list[str]:
     """Uses supported_* lists to filter files in list"""
-    supported_files = supported_video + supported_audio + supported_image + supported_document
+    supported_files = supported_video + supported_audio + supported_image + supported_document + supported_web
     ret = [file for file in input for ext in supported_files if ext.lower() in file.lower()]
     return ret
 
@@ -99,6 +83,21 @@ def get_tree(path, level=-1) -> dict[str]:
     return explore(path, level)
 
 
+def get_suitable_display(media_path: str):
+    ext = which_media_type(media_path)
+    if ext == "video":
+        return video_player(media_path)
+    if ext == "audio":
+        return audio_player(media_path)
+    if ext == "image":
+        return image_viewer(media_path)
+    if ext == "document":
+        return pdf_viewer(media_path)
+    if ext == "web":
+        return web_viewer(media_path)
+    return ""
+
+
 def which_media_type(file: str) -> str:
     ext = "." + file.rsplit('.', 1)[1].lower()
     if ext in supported_video:
@@ -109,16 +108,9 @@ def which_media_type(file: str) -> str:
         return "image"
     if ext in supported_document:
         return "document"
+    if ext in supported_web:
+        return "web"
     return "unsupported"
-
-
-def searchbar(sess):
-    return Div(Input(type="search", name="search", list="searchwords", hx_post="/search", hx_trigger="input changed delay:500ms, search", hx_target="#video-list"), cls="topnav")
-
-
-def sidebar(sess):
-    c_list = create_sidebar_links(sess)
-    return Div(*c_list, create_datalist(sess), cls="sidenav", id="video-list")
 
 
 def create_sidebar_links(sess) -> list[A]:
@@ -141,13 +133,22 @@ def create_datalist(sess) -> list[Option]:
 
 def create_file_link(name: str, path: str):
     ext = which_media_type(path)
-    if ext in ["video", "audio", "image", "document"]:
+    if ext in ["video", "audio", "image", "document", "web"]:  # or != unsupported
         return A(f"{name}", hx_post="update_display", hx_target=".main", hx_vals="{\"media_path\":\"" + path + "\"}")
     return A(f"{name}")
 
 
 def create_dir_link(x: str):
     return A(f"{x}", hx_post="change_tree", hx_target="#video-list", hx_vals="{\"value\":\"" + x + "\"}", onclick="clear_searchbar()")
+
+
+def searchbar(sess):
+    return Div(Input(type="search", name="search", list="searchwords", hx_post="/search", hx_trigger="input changed delay:500ms, search", hx_target="#video-list"), cls="topnav")
+
+
+def sidebar(sess):
+    c_list = create_sidebar_links(sess)
+    return Div(*c_list, create_datalist(sess), cls="sidenav", id="video-list")
 
 
 def video_player(video_path):
@@ -164,6 +165,13 @@ def image_viewer(image_path):
 
 def pdf_viewer(pdf_path):
     return Embed(src=pdf_path, type="application/pdf", width="100%", style="height:92vh;")
+
+
+def web_viewer(web_path):
+    web_link = ""
+    with open(web_path, "r") as f:
+        web_link = f.read()
+    return Iframe(src=web_link, title="Web Viewer", allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share", referrerpolicy="strict-origin-when-cross-origin", allowfullscreen="allowfullscreen", width="100%", style="height:92vh;border:none;")
 
 
 @rt('/')
