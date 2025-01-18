@@ -18,6 +18,7 @@ hdrs = [
 
 
 app, rt = fast_app(hdrs=hdrs, routes=routes)
+# write file endings in lower case
 supported_video = [".mp4", ".webm", ".ogg"]
 supported_audio = [".mp3", ".wav", ".ogg"]
 supported_image = [".apng", ".gif", ".ico", ".cur", ".jpg", ".jpeg", ".jfif", ".pjpeg", ".pjp", ".png", ".svg", ".webp"]
@@ -35,14 +36,21 @@ def index_page(sess):
     return hdrs[0], sidebar(sess), searchbar(sess), Div(media_display, cls="main")
 
 
+def file_filter(x: str, file_formats: list[str]):
+    # could do [f.lower() for f in file_formats] but formats should be lower case anyways
+    if x.lower().endswith(tuple(file_formats)):
+        return True
+    return False
+
+
 def filter_list(input: list[str]) -> list[str]:
     """Uses supported_* lists to filter files in list"""
     supported_files = supported_video + supported_audio + supported_image + supported_document + supported_web
-    ret = [file for file in input for ext in supported_files if ext.lower() in file.lower()]
+    ret = list(filter(lambda x: file_filter(x, supported_files), input))
     return ret
 
 
-def explore(starting_path, level=-1):
+def explore(starting_path: str, level: int = -1):
     alld = {'': {}}
     count = 0
     if starting_path[-1] == os.sep:
@@ -68,18 +76,18 @@ def explore(starting_path, level=-1):
     return alld['']
 
 
-def get_dir_list(path) -> list[str]:
+def get_dir_list(path: str) -> list[str]:
     ret = explore(path, 1)["directories"]
     return ret
 
 
-def get_media_list(path) -> list[(str, str)]:
+def get_media_list(path: str) -> list[(str, str)]:
     media = explore(path, 1)
     ret = [(x, os.path.join(path, x)) for x in media["files"]]
     return ret
 
 
-def get_tree(path, level=-1) -> dict[str]:
+def get_tree(path: str, level: int = -1) -> dict[str]:
     return explore(path, level)
 
 
@@ -99,7 +107,7 @@ def get_suitable_display(media_path: str):
 
 
 def which_media_type(file: str) -> str:
-    if not "." in file:
+    if "." not in file:
         return "unsupported"
 
     ext = "." + file.rsplit('.', 1)[1].lower()
@@ -154,23 +162,23 @@ def sidebar(sess):
     return Div(*c_list, create_datalist(sess), cls="sidenav", id="video-list")
 
 
-def video_player(video_path):
+def video_player(video_path: str):
     return Video(Source(src=video_path, type="video/mp4"), style="width:100%;max-height:92vh;", onloadstart="this.volume=get_vol()", onvolumechange="set_vol(this.volume)", controls="controls", autoplay="autoplay", loop="loop", preload="auto")
 
 
-def audio_player(audio_path):
+def audio_player(audio_path: str):
     return Audio(Source(src=audio_path, type="audio/mpeg"), onloadstart="this.volume=get_vol()", onvolumechange="set_vol(this.volume)", controls="controls", autoplay="autoplay", preload="auto")
 
 
-def image_viewer(image_path):
+def image_viewer(image_path: str):
     return Div(Img(src=image_path, id="image_box"), id="scale_box")
 
 
-def pdf_viewer(pdf_path):
+def pdf_viewer(pdf_path: str):
     return Embed(src=pdf_path, type="application/pdf", width="100%", style="height:92vh;")
 
 
-def web_viewer(web_path):
+def web_viewer(web_path: str):
     web_link = ""
     with open(web_path, "r") as f:
         web_link = f.read()
@@ -185,12 +193,12 @@ def get(sess):
 
 
 @rt("/{fname:path}.{ext:static}")
-def get(fname:str, ext:str, sess):
+def get(fname: str, ext: str, sess):
     return FileResponse(f'{fname}.{ext}', headers={"accept-ranges": "bytes"})
 
 
 @rt('/search')
-def post(search: str , sess):
+def post(search: str, sess):
     ret = []
     tree = get_tree(sess['path'], 1)
     for x in tree['directories']:
